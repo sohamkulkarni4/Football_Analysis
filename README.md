@@ -1,47 +1,34 @@
 # ⚽ Football Analysis
 
-**Football Analysis: Player Tracking & Assignment using YOLOv5 and K‑Means Clustering**  
-A Python-based computer vision pipeline for football analytics — tracking players across frames and assigning player identities using clustering algorithms.
+<img src="images/demo_output.gif" width="600"/>
+
+A computer vision project for tracking football players in videos using **YOLOv5** and **K-Means Clustering**. Trained on a custom dataset created via **RoboFlow**.
 
 
 
 ## 🔍 Overview
 
-This project implements:
+- **Player Detection:**  
+  Custom-trained YOLOv5 model detects players in each frame.
 
-- **Player Detection & Tracking**  
-  Detects players in video frames using a custom-trained **YOLOv5** model.
+- **Tracking & ID Assignment:**  
+  Uses bounding box centroids and **K-Means clustering** to assign consistent player identities across frames.
 
-- **Player Assignment via K‑Means Clustering**  
-  Associates each detected player across frames with unique identities by clustering their bounding-box centroids and appearance features using **K‑Means**.
-
-- **Dataset Creation with RoboFlow**  
-  Prepared and annotated the training dataset using **RoboFlow**, then exported it for fine-tuning YOLOv5.
+- **Dataset Creation:**  
+  Dataset annotated and exported using **RoboFlow**.
 
 
 
 ## 🛠️ Key Components
 
-- **YOLOv5-based Detection**  
-  A custom dataset, exported from RoboFlow, is used to train the YOLOv5 detection model. The model outputs bounding boxes and confidence scores for each player in frame.
-
-- **Tracking & ID Assignment**  
-  - Extracts bounding-box centroids and optional appearance descriptors per detection.  
-  - Applies **K‑Means clustering** over time windows to group detections and assign stable identities to players.
-
-- **Utility Scripts**  
-  - Data loaders and annotation processing scripts from RoboFlow exports  
-  - Inference pipeline that detects, tracks, clusters, and visualizes player IDs overlaid on frames
+- YOLOv5 detection and tracking pipeline  
+- K-Means clustering for player ID assignment  
+- Visual output with bounding boxes and player labels
 
 
 
-## 🎯 Goals & Applications
+## 🎯 Applications
 
-- **Automated Player Tracking**  
-  Valuable for sports analytics, automating player movement analysis and heatmaps.
-
-- **Team Performance Metrics**  
-  Enables statistical insights like distance covered, average positioning, and player interactions.
-
-- **Extendable Framework**  
-  Easy to adapt to other sports, player-specific modeling, or sophisticated tracking methods.
+- Automated player tracking  
+- Positional and movement analysis  
+- Extendable to other sports or tracking tasks
