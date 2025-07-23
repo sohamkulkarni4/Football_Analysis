@@ -1,6 +1,7 @@
 # ⚽ Football Analysis
-
-<img src="images/demo_output.gif" width="600"/>
+<div align="center">
+<img src="output_videos/output_video.png" width="900"/>
+</div>
 
 A computer vision project for tracking football players in videos using **YOLOv5** and **K-Means Clustering**. Trained on a custom dataset created via **RoboFlow**.
 
