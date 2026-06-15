@@ -1,35 +1,146 @@
-# ⚽ Football Analysis
+# Football Analysis
+
+A computer vision pipeline that detects players in a football match video, assigns them to teams by jersey colour, tracks ball possession per frame, and produces an annotated output video.
+
 <div align="center">
 <img src="output_videos/output_video.png" width="900"/>
 </div>
 
-A computer vision project for tracking football players in videos using **YOLOv5** and **K-Means Clustering**. Trained on a custom dataset created via **RoboFlow**.
+---
 
+## Pipeline
 
+```
+Input Video (mp4)
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  1. DETECT & TRACK          tracker.py       │
+│                                              │
+│  YOLOv5 (models/best.pt)                    │
+│  detects 3 classes per frame:               │
+│    • player  • referee  • ball              │
+│                                              │
+│  ByteTrack assigns a stable track_id        │
+│  to each detected object across frames.     │
+│                                              │
+│  Goalkeepers are reclassified as players.   │
+│  Ball always gets track_id = 1.             │
+│                                              │
+│  Results cached to stubs/track_stubs.pkl    │
+│  to avoid re-running inference.             │
+└───────────────────┬─────────────────────────┘
+                    │  tracks dict
+                    │  { "players": [...],
+                    │    "referees": [...],
+                    │    "ball": [...] }
+                    ▼
+┌─────────────────────────────────────────────┐
+│  2. INTERPOLATE BALL        tracker.py       │
+│                                              │
+│  Ball is often missing for a few frames     │
+│  (occlusion, motion blur). Fills gaps       │
+│  using linear interpolation + back-fill.    │
+└───────────────────┬─────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────┐
+│  3. ASSIGN TEAMS            team_assigner.py │
+│                                              │
+│  For each player bounding box:              │
+│    a) Crop the top half (jersey area)       │
+│    b) K-Means (k=2) on pixel colours        │
+│       → background vs jersey cluster        │
+│    c) Extract jersey colour                 │
+│                                             │
+│  Then K-Means (k=2) across all jersey      │
+│  colours → Team 1 and Team 2.              │
+│                                             │
+│  Each player's team is cached after the    │
+│  first prediction (player_team_dict).      │
+└───────────────────┬─────────────────────────┘
+                    │  team + team_color
+                    │  added to each player
+                    ▼
+┌─────────────────────────────────────────────┐
+│  4. ASSIGN BALL POSSESSION  player_ball_     │
+│                             assigner.py      │
+│                                              │
+│  Per frame: find the player whose foot      │
+│  bbox corner is closest to the ball.        │
+│  Threshold: 70 pixels.                      │
+│                                              │
+│  If no player is within range, carry        │
+│  forward the last known possessor's team.   │
+└───────────────────┬─────────────────────────┘
+                    │  has_ball flag +
+                    │  team_ball_control array
+                    ▼
+┌─────────────────────────────────────────────┐
+│  5. ANNOTATE & SAVE         tracker.py       │
+│                                              │
+│  For each frame, draws:                     │
+│    • Ellipse under each player              │
+│      (colour = team colour)                 │
+│    • Track ID label on the ellipse          │
+│    • Triangle above ball holder             │
+│    • Triangle on the ball                   │
+│    • Semi-transparent overlay with          │
+│      cumulative possession % per team       │
+└───────────────────┬─────────────────────────┘
+                    │
+                    ▼
+       Output Video (output_videos/output_video.avi)
+```
 
-## 🔍 Overview
+---
 
-- **Player Detection:**  
-  Custom-trained YOLOv5 model detects players in each frame.
+## Project Structure
 
-- **Tracking & ID Assignment:**  
-  Uses bounding box centroids and **K-Means clustering** to assign consistent player identities across frames.
+```
+Football_Analysis/
+│
+├── main.py                  # Runs the full pipeline
+│
+├── tracker.py               # Detection, tracking, interpolation, annotation
+├── team_assigner.py         # Jersey colour clustering → team assignment
+├── player_ball_assigner.py  # Ball possession per frame
+├── utils.py                 # Video I/O and bbox geometry helpers
+│
+├── models/                  # Place best.pt here (YOLOv5 weights)
+├── input_videos/            # Source video(s)
+├── output_videos/           # Annotated output video
+├── stubs/                   # Cached track detections (skip re-inference)
+│
+├── training/                # YOLOv5 training notebook (RoboFlow dataset)
+└── development_and_analysis/ # Exploratory notebooks (colour clustering)
+```
 
-- **Dataset Creation:**  
-  Dataset annotated and exported using **RoboFlow**.
+---
 
+## Running
 
+```bash
+python main.py
+```
 
-## 🛠️ Key Components
+Output is written to `output_videos/output_video.avi`.
 
-- YOLOv5 detection and tracking pipeline  
-- K-Means clustering for player ID assignment  
-- Visual output with bounding boxes and player labels
+To rerun inference from scratch instead of using the cached stub, set `read_from_stub=False` in `main.py`:
 
+```python
+tracks = tracker.get_object_tracks(video_frames, read_from_stub=False, stub_path='stubs/track_stubs.pkl')
+```
 
+---
 
-## 🎯 Applications
+## Dependencies
 
-- Automated player tracking  
-- Positional and movement analysis  
-- Extendable to other sports or tracking tasks
+```
+ultralytics   # YOLOv5 inference
+supervision   # ByteTrack multi-object tracker
+opencv-python # Video I/O and drawing
+scikit-learn  # K-Means clustering
+pandas        # Ball position interpolation
+numpy
+```
